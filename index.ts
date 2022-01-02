@@ -52,12 +52,15 @@ io.on('connection', (socket) => {
 			socket.join(roomId);
 			socket.broadcast.to(roomId).emit('user-connected', userId);
 		}
-		console.log(rooms);
-		rooms.forEach((room) => {
-			console.log(room.users);
-		});
 		socket.on('disconnect', () => {
 			socket.broadcast.to(roomId).emit('user-disconnected', userId);
+			const room = rooms.get(roomId);
+			if (room) {
+				const index = room.users.findIndex((u) => u.id === userId);
+				if (index !== -1) {
+					room.users.splice(index, 1);
+				}
+			}
 		});
 	});
 	socket.on('message', (message:Message ) => {
