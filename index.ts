@@ -12,26 +12,60 @@ const io = new Server(server, {
 	}
 });
 
+type User = {
+	id: string;
+	name: string;
+	roomId: string;
+};
+
+type Room = {
+	id: string;
+	drawer: User;
+	users: User[];
+};
+
+type Message = {
+	from : string;
+	text: string;
+}
+
+const rooms = new Map<string, Room>();
+
 const PORT = process.env.PORT || 5000;
 
-
 io.on('connection', (socket) => {
-	socket.on('join-room',(data)=>{
-		console.log(data)
-		socket.join(data.roomId);
-		io.to(data.roomId).emit('user-connected',data.userId);
-	})
-	socket.on('message', (message: string) => {
-		console.log(message);
+	socket.on('join-room', (data) => {
+		const { roomId, userId, name } = data;
+		const user = { id: userId, name, roomId };
+		const room = rooms.get(roomId);
+		if (!room) {
+			const newRoom = {
+				id: roomId,
+				drawer: user,
+				users: [user]
+			};
+			rooms.set(roomId, newRoom);
+			socket.join(roomId);
+			socket.broadcast.to(roomId).emit('user-connected', userId);
+		} else {
+			room.users.push(user);
+			socket.join(roomId);
+			socket.broadcast.to(roomId).emit('user-connected', userId);
+		}
+		console.log(rooms);
+		rooms.forEach((room) => {
+			console.log(room.users);
+		});
+		socket.on('disconnect', () => {
+			socket.broadcast.to(roomId).emit('user-disconnected', userId);
+		});
+	});
+	socket.on('message', (message:Message ) => {
 		io.emit('message', message);
 	});
 	socket.on('draw', (data) => {
 		io.emit('draw', data);
 	});
-});
-
-app.get('/:room', (req, res) => {
-	console.log(req.params.room);
 });
 
 server.listen(PORT, () => {
