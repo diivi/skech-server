@@ -1,6 +1,12 @@
 import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import { Room } from './types/room';
+import { User } from './types/user';
+import { Message } from './types/message';
+import { handleRoomEvents } from './events/roomEvents';
+import { handleMessages } from './events/handleMessages';
+import { handleDrawing } from './events/handleDrawing';
 
 const app = express();
 
@@ -12,65 +18,14 @@ const io = new Server(server, {
 	}
 });
 
-type User = {
-	id: string;
-	name: string;
-	roomId: string;
-};
-
-type Room = {
-	id: string;
-	drawer: User;
-	users: User[];
-};
-
-type Message = {
-	from : string;
-	text: string;
-}
-
 const rooms = new Map<string, Room>();
 
 const PORT = process.env.PORT || 5000;
 
 io.on('connection', (socket) => {
-	socket.on('join-room', (data) => {
-		const { roomId, userId, name } = data;
-		const user = { id: userId, name, roomId };
-		const room = rooms.get(roomId);
-		if (!room) {
-			const newRoom = {
-				id: roomId,
-				drawer: user,
-				users: [user]
-			};
-			rooms.set(roomId, newRoom);
-			socket.join(roomId);
-			socket.broadcast.to(roomId).emit('user-connected', userId);
-		} else {
-			room.users.push(user);
-			socket.join(roomId);
-			socket.broadcast.to(roomId).emit('user-connected', userId);
-		}
-		socket.on('disconnect', () => {
-			socket.broadcast.to(roomId).emit('user-disconnected', userId);
-			const room = rooms.get(roomId);
-			if (room) {
-				const index = room.users.findIndex((u) => u.id === userId);
-				if (index !== -1) {
-					room.users.splice(index, 1);
-				}
-			}
-		});
-	});
-	socket.on('message', (message:Message ) => {
-		io.emit('message', message);
-	});
-	socket.on('draw', (data) => {
-		io.emit('draw', data);
-	});
-});
+	handleRoomEvents(socket,io, rooms);
+});	
 
 server.listen(PORT, () => {
-	console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
+	console.log(`⚡️[server]: Server is running at http://localhost:${PORT}`);
 });
