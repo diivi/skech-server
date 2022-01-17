@@ -2,11 +2,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { Room } from './types/room';
-import { User } from './types/user';
-import { Message } from './types/message';
 import { handleRoomEvents } from './events/roomEvents';
-import { handleMessages } from './events/handleMessages';
-import { handleDrawing } from './events/handleDrawing';
+
 
 const app = express();
 

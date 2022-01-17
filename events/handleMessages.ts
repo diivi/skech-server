@@ -4,9 +4,9 @@ import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 
 export const handleMessages = (
 	socket: Socket,
-	io: Server<DefaultEventsMap, DefaultEventsMap, DefaultEventsMap, any>,
+	io: Server<DefaultEventsMap>,
 	room: string
-) => {
+): void => {
 	socket.on('message', (message: Message) => {
 		io.to(room).emit('message', message);
 	});
